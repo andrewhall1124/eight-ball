@@ -17,16 +17,17 @@ function escapeHtml(s) {
   return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 }
 
-// The ball is a solid disc of 2-char block cells with the window cut out of
-// it. Every frame is ROWS_TOTAL rows so the layout never jumps. Vertical
-// distances are in text rows, scaled by ASPECT.
+// The ball is a disc of 2-char block cells, shaded like a sphere lit from
+// the top left, with the window cut out of it. Every frame is ROWS_TOTAL
+// rows so the layout never jumps. Vertical distances are in text rows,
+// scaled by ASPECT.
 const R = 14;          // ball radius in cells (1 cell = 2 chars wide)
 const WR = 9;          // window radius
 const ASPECT = 1.2;    // a 2-char cell is ~1.2x wider than a text row is tall
 const RY = Math.round(R * ASPECT);   // ball radius in text rows
 const SIZE = 2 * R + 1;
 const ROWS_TOTAL = 2 * RY + 1;
-const INK = "██", GAP = "  ";
+const INK = "██", DARK = "▓▓", MID = "▒▒", LIGHT = "░░", GAP = "  ";
 
 const EIGHT = [
   ".###.",
@@ -37,6 +38,15 @@ const EIGHT = [
   "#...#",
   ".###.",
 ];
+
+function shadeCell(nx, ny, rn) {
+  // Lit from the top left; a reflection band bottom-right widens toward the rim.
+  const l = -(nx * 0.7 + ny * 0.7);         // +1 lit, -1 in shadow
+  const t = rn * rn * (0.5 - l);              // grows toward bottom-right rim
+  if (t > 0.75) return DARK;
+  if (t > 0.4) return MID;
+  return LIGHT;
+}
 
 // grid(paint): paint(dx, ry, r) may return a 2-char cell for the window area.
 // dx is in cells, ry in text rows, r the distance from center in cells.
@@ -49,8 +59,9 @@ function grid(paint) {
       const dx = px - R, dy = ry / ASPECT;
       const r = Math.sqrt(dx * dx + dy * dy);
       if (r > R + 0.5) { cells.push(GAP); continue; }
+      if (r > R - 0.6) { cells.push(INK); continue; }
       const w = paint && paint(dx, ry, r);
-      cells.push(w || INK);
+      cells.push(w || shadeCell(dx / R, dy / R, r / R));
     }
     rows.push(cells);
   }
@@ -105,35 +116,24 @@ function center(s, w) {
   return " ".repeat(left) + s + " ".repeat(pad - left);
 }
 
-// Triangle apex at row -4, base at row +3; row k has half-width k cells.
-const APEX = -4, ROWS = 8;
-const TEXT_ROWS = [4, 5, 6];
-const TEXT_WIDTHS = TEXT_ROWS.map((k) => (2 * k - 1) * 2 - 2); // 1-char margin each side
+const TEXT_WIDTH = 16;
+const TEXT_WIDTHS = [TEXT_WIDTH, TEXT_WIDTH, TEXT_WIDTH];
 
-// Returns {text, spans}: the frame as plain text plus [start, end] char ranges
-// of the answer lines, so the caller can wrap them in colored spans.
+// Returns {text, spans}: the frame as plain text plus [row, start, end] char
+// ranges of the answer lines, so the caller can wrap them in spans.
 function answerBall(text) {
-  const lines = wrapAnswer(text, TEXT_WIDTHS);
-  const rows = grid((dx, ry, r) => {
-    if (r > WR + 0.5) return null;
-    const k = ry - APEX;
-    if (k < 0 || k >= ROWS) return GAP;
-    if (Math.abs(dx) > k) return GAP;
-    if (k === ROWS - 1 || Math.abs(dx) === k) return INK;
-    return GAP;
-  });
+  const lines = wrapAnswer(text, TEXT_WIDTHS).filter(Boolean);
+  const rows = grid((dx, ry, r) => (r > WR + 0.5 ? null : GAP));
   const out = rows.map((c) => c.join(""));
   const spans = [];
-  TEXT_ROWS.forEach((k, i) => {
-    const py = RY + APEX + k;
-    const width = TEXT_WIDTHS[i];
-    const startChar = (R - k + 1) * 2 + 1;
-    const row = out[py];
-    // Each cell is 2 chars but block glyphs are 1 code unit each, so char
+  const firstRow = RY - Math.floor(lines.length / 2);
+  lines.forEach((line, i) => {
+    const py = firstRow + i;
+    const start = Math.round((SIZE * 2 - line.length) / 2);
+    // Each cell is 2 chars and block glyphs are 1 code unit each, so char
     // offsets and cell offsets agree.
-    const s = center(lines[i], width);
-    out[py] = row.slice(0, startChar) + s + row.slice(startChar + width);
-    if (lines[i]) spans.push([py, startChar, startChar + width]);
+    out[py] = out[py].slice(0, start) + line + out[py].slice(start + line.length);
+    spans.push([py, start, start + line.length]);
   });
   return { text: out.join("\n"), spans };
 }
@@ -160,11 +160,7 @@ function renderOdds(result) {
   const labels = result.labels || {};
   const rows = Object.entries(probs).sort((a, b) => b[1] - a[1]);
   const nameWidth = Math.max(...rows.map(([k]) => (labels[k] || k).length));
-  const out = [
-    `<span class="head">jev probabilities (${escapeHtml(result.model || "jev")})</span>`,
-    "<- marks the sampled reply",
-    "",
-  ];
+  const out = [];
   for (const [key, p] of rows) {
     const name = (labels[key] || key).padEnd(nameWidth);
     const filled = Math.round(p * BAR_WIDTH);
@@ -220,9 +216,8 @@ async function ask(question) {
     ballEl.innerHTML = answerBallHtml(result.text);
     ballEl.classList.add(`mood-${result.mood}`);
     statusEl.textContent =
-      result.source === "jev" ? `source: jev (${result.model})` :
-      result.source === "offline" ? "source: offline, random pick (no TYPESAFE_API_KEY)" :
-      "source: fallback, random pick (jev request failed)";
+      result.source === "offline" ? "offline: random pick (no TYPESAFE_API_KEY)" :
+      result.source === "fallback" ? "jev request failed: random pick" : "";
     renderOdds(result);
   }
 
