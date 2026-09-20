@@ -10,42 +10,24 @@
 </head>
 <body>
   <main>
-    <h1>Magic Eight Ball</h1>
-    <p class="tagline">Ask a yes-or-no question. The ball consults Jev and swirls up a reply.</p>
+<pre class="title">
++----------------------+
+|    MAGIC  8  BALL    |
++----------------------+
+</pre>
+    <p class="tagline">ask a yes/no question. jev picks the reply.</p>
 
-    <div class="stage">
-      <div class="ball" id="ball">
-        <div class="ball-shine"></div>
-        <div class="face face-eight">
-          <span>8</span>
-        </div>
-        <div class="face face-window">
-          <div class="liquid">
-            <span class="bubble b1"></span>
-            <span class="bubble b2"></span>
-            <span class="bubble b3"></span>
-            <span class="bubble b4"></span>
-            <span class="bubble b5"></span>
-          </div>
-          <div class="triangle" id="triangle">
-            <p class="answer" id="answer"></p>
-          </div>
-        </div>
-      </div>
-      <div class="shadow"></div>
-    </div>
+    <pre id="ball" class="ball" aria-live="polite"></pre>
 
     <form id="form" autocomplete="off">
-      <input id="question" type="text" maxlength="500" placeholder="Will it rain on Saturday?" required />
-      <button id="ask" type="submit">Shake</button>
+      <span class="prompt">&gt;</span>
+      <input id="question" type="text" maxlength="500" placeholder="will it rain on saturday?" required />
+      <button id="ask" type="submit">[ shake ]</button>
     </form>
 
-    <p class="status" id="status" aria-live="polite"></p>
+    <pre id="status" class="status" aria-live="polite"></pre>
 
-    <details class="odds" id="odds" hidden>
-      <summary>How Jev weighed it</summary>
-      <ol id="odds-list"></ol>
-    </details>
+    <pre id="odds" class="odds" hidden></pre>
   </main>
 
   <script src="app.js"></script>

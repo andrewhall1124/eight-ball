@@ -16,7 +16,7 @@ Without a key the ball still works, it just picks a reply at random and shows an
 
 - `server.js` serves `public/` and proxies `POST /api/ask` to `https://api.typesafe.ai/v1/systemone` so the API key stays server-side.
 - `answers.js` holds the 20 replies plus the criteria Jev scores each one against.
-- `public/` is the animated ball: shake, blue liquid swirl, triangle reveal. No frameworks.
+- `public/` is a plain monospace page: an ASCII-art ball that shakes, the reply drawn inside an ASCII triangle, and a bar chart of Jev's full probability distribution over the 20 replies. No frameworks.
 
 ## Deploy
 

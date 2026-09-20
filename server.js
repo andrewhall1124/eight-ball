@@ -39,6 +39,10 @@ function sample(probabilities) {
   return entries[entries.length - 1][0];
 }
 
+const LABELS = Object.fromEntries(
+  Object.entries(ANSWERS).map(([key, a]) => [key, a.text])
+);
+
 function randomAnswer() {
   const keys = Object.keys(ANSWERS);
   return keys[Math.floor(Math.random() * keys.length)];
@@ -110,6 +114,7 @@ async function handleAsk(req, res) {
       top: verdict?.choice ?? null,
       confidence: verdict?.confidence ?? null,
       probabilities,
+      labels: LABELS,
     });
   } catch (err) {
     console.error(err);
