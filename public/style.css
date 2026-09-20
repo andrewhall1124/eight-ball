@@ -28,7 +28,7 @@
 
 * { box-sizing: border-box; }
 
-html, body { height: 100%; }
+html, body { min-height: 100%; }
 
 body {
   margin: 0;
@@ -45,6 +45,7 @@ body {
 main {
   width: 100%;
   max-width: 640px;
+  padding-bottom: 64px;
 }
 
 pre {
@@ -122,6 +123,13 @@ button:disabled { color: var(--muted); cursor: wait; text-decoration: none; }
 .odds {
   margin-top: 20px;
   color: var(--muted);
+}
+
+.odds summary {
+  cursor: pointer;
+  color: var(--text);
+  margin-bottom: 12px;
+  user-select: none;
 }
 
 .odds .picked { color: var(--text); font-weight: 700; }

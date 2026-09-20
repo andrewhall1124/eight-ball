@@ -4,6 +4,7 @@ const input = document.getElementById("question");
 const askBtn = document.getElementById("ask");
 const statusEl = document.getElementById("status");
 const oddsEl = document.getElementById("odds");
+const oddsBox = document.getElementById("odds-box");
 
 const FRAME_MS = 90;
 const SHAKE_FRAMES = 12;
@@ -154,7 +155,7 @@ function answerBallHtml(text) {
 function renderOdds(result) {
   const probs = result.probabilities;
   if (!probs) {
-    oddsEl.hidden = true;
+    oddsBox.hidden = true;
     return;
   }
   const labels = result.labels || {};
@@ -171,7 +172,7 @@ function renderOdds(result) {
     out.push(key === result.key ? `<span class="picked">${line}</span>` : line);
   }
   oddsEl.innerHTML = out.join("\n");
-  oddsEl.hidden = false;
+  oddsBox.hidden = false;
 }
 
 async function ask(question) {
@@ -179,7 +180,7 @@ async function ask(question) {
   busy = true;
   askBtn.disabled = true;
   ballEl.className = "ball";
-  oddsEl.hidden = true;
+  oddsBox.hidden = true;
   statusEl.textContent = "shaking...";
 
   // Fire the request first so the round-trip hides behind the animation.
