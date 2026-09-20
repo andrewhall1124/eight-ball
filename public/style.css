@@ -58,16 +58,12 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-}
-
-.tagline {
-  color: var(--muted);
-  margin: 8px 0 20px;
+  margin-bottom: 20px;
 }
 
 .ball {
   --rows: 35;
-  font-size: clamp(6px, 2.2vw, 14px);
+  font-size: clamp(6px, 2.55vw, 14px);
   line-height: 1;
   height: calc(var(--rows) * 1em);
   margin: 0 auto 32px;
@@ -117,10 +113,11 @@ button:hover { text-decoration: underline; }
 button:disabled { color: var(--muted); cursor: wait; text-decoration: none; }
 
 .status {
-  min-height: 1.25em;
   margin-top: 12px;
   color: var(--muted);
 }
+
+.status:empty { display: none; }
 
 .odds {
   margin-top: 20px;
@@ -133,4 +130,6 @@ button:disabled { color: var(--muted); cursor: wait; text-decoration: none; }
 
 @media (max-width: 480px) {
   body { font-size: 11px; }
+  /* 16px stops iOS from zooming the page when the input is focused. */
+  input { font-size: 16px; }
 }

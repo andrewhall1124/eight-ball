@@ -170,7 +170,6 @@ function renderOdds(result) {
     const line = `${escapeHtml(name)}  ${bar}  ${pct}${mark}`;
     out.push(key === result.key ? `<span class="picked">${line}</span>` : line);
   }
-  out.push("", "the ball samples from this distribution", "instead of always taking the top pick.");
   oddsEl.innerHTML = out.join("\n");
   oddsEl.hidden = false;
 }
