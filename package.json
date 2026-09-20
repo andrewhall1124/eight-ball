@@ -1,0 +1,14 @@
+{
+  "name": "eight-ball",
+  "version": "1.0.0",
+  "description": "Magic Eight Ball powered by Jev, TypeSafe's System One decision model",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

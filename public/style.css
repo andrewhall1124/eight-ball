@@ -1,0 +1,380 @@
+:root {
+  --bg: #0b0d14;
+  --bg-glow: #1a1f3a;
+  --text: #eef0f7;
+  --muted: #8a90a8;
+  --accent: #7c8cff;
+  --ball-size: min(72vw, 340px);
+  --window: #0a1a6b;
+  --window-deep: #030a33;
+  --yes: #4ade80;
+  --no: #f87171;
+  --maybe: #fbbf24;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 20%, var(--bg-glow) 0%, transparent 70%),
+    var(--bg);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+main {
+  width: 100%;
+  max-width: 560px;
+  text-align: center;
+}
+
+h1 {
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  margin: 0 0 6px;
+  letter-spacing: 0.02em;
+}
+
+.tagline {
+  color: var(--muted);
+  margin: 0 0 28px;
+}
+
+/* ---------- Stage & ball ---------- */
+
+.stage {
+  position: relative;
+  height: calc(var(--ball-size) + 60px);
+  display: grid;
+  place-items: start center;
+  perspective: 900px;
+}
+
+.ball {
+  position: relative;
+  width: var(--ball-size);
+  height: var(--ball-size);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, #4a4f63 0%, #1b1d27 35%, #05060a 75%);
+  box-shadow:
+    inset -18px -24px 40px rgba(0, 0, 0, 0.8),
+    inset 10px 10px 30px rgba(255, 255, 255, 0.05),
+    0 30px 60px rgba(0, 0, 0, 0.6);
+  animation: float 4s ease-in-out infinite;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ball.shaking {
+  animation: shake 1.1s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.ball-shine {
+  position: absolute;
+  top: 8%;
+  left: 14%;
+  width: 34%;
+  height: 22%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.35), transparent 70%);
+  filter: blur(4px);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.shadow {
+  position: absolute;
+  bottom: 6px;
+  width: calc(var(--ball-size) * 0.7);
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.6), transparent 70%);
+  animation: shadow-pulse 4s ease-in-out infinite;
+}
+
+/* Both faces sit in the middle of the ball; we crossfade between them. */
+.face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.face-eight span {
+  width: 40%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #ffffff, #d5d8e3 70%, #b3b7c6);
+  color: #0b0d14;
+  font-size: calc(var(--ball-size) * 0.24);
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: inset -4px -6px 12px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.face-window {
+  opacity: 0;
+  transform: scale(0.85);
+  pointer-events: none;
+}
+
+.ball.revealing .face-eight,
+.ball.revealed .face-eight {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.ball.revealing .face-window,
+.ball.revealed .face-window {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* The porthole */
+.liquid {
+  position: absolute;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 60%, var(--window) 0%, var(--window-deep) 70%);
+  box-shadow:
+    inset 0 0 30px rgba(0, 0, 0, 0.9),
+    inset 0 -8px 16px rgba(80, 120, 255, 0.25),
+    0 0 0 6px #0c0e16,
+    0 0 0 8px #1c1f2c;
+}
+
+.liquid::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background:
+    conic-gradient(from 0deg, transparent 0 20%, rgba(120, 150, 255, 0.18) 30%, transparent 40%, rgba(60, 90, 220, 0.2) 65%, transparent 80%);
+  animation: swirl 6s linear infinite;
+  opacity: 0.8;
+}
+
+.ball.revealing .liquid::before { animation-duration: 1.2s; }
+
+.bubble {
+  position: absolute;
+  bottom: -10%;
+  width: 6%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.7), rgba(150, 180, 255, 0.15));
+  animation: rise 5s ease-in infinite;
+  opacity: 0;
+}
+.b1 { left: 20%; animation-delay: 0s; }
+.b2 { left: 45%; animation-delay: 1.3s; width: 4%; }
+.b3 { left: 70%; animation-delay: 2.1s; width: 8%; }
+.b4 { left: 30%; animation-delay: 3.2s; width: 5%; }
+.b5 { left: 60%; animation-delay: 4.1s; width: 3%; }
+
+/* The triangle rising from the deep */
+.triangle {
+  position: absolute;
+  width: 44%;
+  aspect-ratio: 1 / 0.9;
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+  background: linear-gradient(180deg, #1a35c9 0%, #0c1f8a 60%, #071561 100%);
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: translateY(30%) scale(0.3) rotate(-25deg);
+  filter: blur(6px);
+  transition: none;
+}
+
+.triangle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(50% 92%, 6% 4%, 94% 4%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 50%);
+  pointer-events: none;
+}
+
+.ball.revealed .triangle {
+  animation: surface 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.answer {
+  margin: 0;
+  padding: 8% 16% 36%;
+  font-size: clamp(0.55rem, calc(var(--ball-size) * 0.036), 0.85rem);
+  font-weight: 700;
+  line-height: 1.15;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #cfd8ff;
+  text-shadow: 0 0 8px rgba(140, 170, 255, 0.6);
+  text-align: center;
+}
+
+.ball.mood-yes .triangle { background: linear-gradient(180deg, #1f7a45 0%, #0f5a30 60%, #073d20 100%); }
+.ball.mood-no .triangle { background: linear-gradient(180deg, #8a1f2b 0%, #611019 60%, #3f0910 100%); }
+.ball.mood-maybe .triangle { background: linear-gradient(180deg, #8a6a12 0%, #5f480a 60%, #3d2e05 100%); }
+.ball.mood-yes .answer { color: #d9ffe6; text-shadow: 0 0 8px rgba(74, 222, 128, 0.6); }
+.ball.mood-no .answer { color: #ffdada; text-shadow: 0 0 8px rgba(248, 113, 113, 0.6); }
+.ball.mood-maybe .answer { color: #fff1c9; text-shadow: 0 0 8px rgba(251, 191, 36, 0.6); }
+
+/* ---------- Form ---------- */
+
+form {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #2a2f45;
+  background: #12151f;
+  color: var(--text);
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input:focus { border-color: var(--accent); }
+
+button {
+  padding: 14px 22px;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: #0b0d14;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.1s, filter 0.2s;
+}
+
+button:hover { filter: brightness(1.1); }
+button:active { transform: scale(0.97); }
+button:disabled { opacity: 0.5; cursor: wait; }
+
+.status {
+  min-height: 1.4em;
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.status .badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #1c2035;
+  color: #b9c0e0;
+  font-size: 0.75rem;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ---------- Odds ---------- */
+
+.odds {
+  margin-top: 18px;
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.odds summary { cursor: pointer; text-align: center; }
+
+.odds ol {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.odds li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  position: relative;
+  padding: 4px 8px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.odds li::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: var(--w);
+  background: rgba(124, 140, 255, 0.15);
+  z-index: -1;
+}
+
+.odds li.picked { color: var(--text); font-weight: 600; }
+
+/* ---------- Keyframes ---------- */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+@keyframes shadow-pulse {
+  0%, 100% { transform: scaleX(1); opacity: 0.9; }
+  50% { transform: scaleX(0.85); opacity: 0.6; }
+}
+
+@keyframes shake {
+  0% { transform: translate(0, 0) rotate(0); }
+  10% { transform: translate(-14px, 4px) rotate(-8deg); }
+  20% { transform: translate(14px, -6px) rotate(9deg); }
+  30% { transform: translate(-16px, 6px) rotate(-11deg); }
+  40% { transform: translate(16px, -4px) rotate(10deg); }
+  50% { transform: translate(-12px, 2px) rotate(-7deg); }
+  60% { transform: translate(12px, -3px) rotate(6deg); }
+  70% { transform: translate(-8px, 2px) rotate(-4deg); }
+  80% { transform: translate(6px, -1px) rotate(3deg); }
+  90% { transform: translate(-3px, 0) rotate(-1deg); }
+  100% { transform: translate(0, 0) rotate(0); }
+}
+
+@keyframes swirl {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes rise {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: 0.8; }
+  50% { transform: translateY(-60px) translateX(6px); }
+  100% { transform: translateY(-140px) translateX(-4px); opacity: 0; }
+}
+
+@keyframes surface {
+  0% { opacity: 0; transform: translateY(30%) scale(0.3) rotate(-25deg); filter: blur(8px); }
+  40% { opacity: 0.6; filter: blur(3px); }
+  70% { transform: translateY(-3%) scale(1.04) rotate(2deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); filter: blur(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ball, .shadow, .liquid::before, .bubble { animation: none !important; }
+  .ball.shaking { animation: none; }
+  .ball.revealed .triangle { animation: none; opacity: 1; transform: none; filter: none; }
+}
