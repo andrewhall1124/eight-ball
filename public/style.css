@@ -39,7 +39,7 @@ pre {
 .title { color: var(--accent); }
 
 @media (max-width: 480px) {
-  body { font-size: 12px; }
+  body { font-size: 11px; }
 }
 
 .tagline {
@@ -48,9 +48,14 @@ pre {
 }
 
 .ball {
-  height: calc(11 * 1.25em);
-  margin-bottom: 40px;
+  --rows: 35;
+  font-size: clamp(6px, 2.2vw, 14px);
+  line-height: 1;
+  height: calc(var(--rows) * 1em);
+  margin: 0 auto 32px;
+  width: max-content;
   overflow: hidden;
+  color: #9aa3c4;
 }
 
 .ball .answer { font-weight: 700; }

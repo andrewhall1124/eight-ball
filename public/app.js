@@ -7,7 +7,7 @@ const oddsEl = document.getElementById("odds");
 
 const FRAME_MS = 90;
 const SHAKE_FRAMES = 12;
-const BAR_WIDTH = 20;
+const BAR_WIDTH = window.innerWidth < 480 ? 10 : 20;
 
 let busy = false;
 
@@ -17,43 +17,84 @@ function escapeHtml(s) {
   return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 }
 
-// Every frame is 11 lines; .ball has a fixed height so the layout never jumps.
+// The ball is generated as a grid of 2-char "pixels" (block glyphs), shaded
+// like a sphere lit from the top left. Every frame is SIZE rows so the
+// layout never jumps. Vertical distances are in text rows, scaled by ASPECT.
+const R = 14;          // ball radius in cells (1 cell = 2 chars wide)
+const WR = 9;          // window radius
+const ASPECT = 1.2;    // a 2-char cell is ~1.2x wider than a text row is tall
+const RY = Math.round(R * ASPECT);   // ball radius in text rows
+const SIZE = 2 * R + 1;
+const ROWS_TOTAL = 2 * RY + 1;
+const LIGHT = "░░", MID = "▒▒", DARK = "▓▓", RIM = "██", GAP = "  ";
+
+const EIGHT = [
+  ".###.",
+  "#...#",
+  "#...#",
+  ".###.",
+  "#...#",
+  "#...#",
+  ".###.",
+];
+
+function shadeCell(nx, ny, rn) {
+  // Lit from the top left; a reflection band bottom-right widens toward the rim.
+  const l = -(nx * 0.7 + ny * 0.7);         // +1 lit, -1 in shadow
+  const s = rn * rn * (0.5 - l);              // grows toward bottom-right rim
+  if (s > 0.75) return DARK;
+  if (s > 0.4) return MID;
+  return LIGHT;
+}
+
+// grid(paint): paint(dx, ry, r) may return a 2-char cell for the window area.
+// dx is in cells, ry in text rows, r the distance from center in cells.
+function grid(paint) {
+  const rows = [];
+  for (let py = 0; py < ROWS_TOTAL; py++) {
+    const cells = [];
+    for (let px = 0; px < SIZE; px++) {
+      const ry = py - RY;
+      const dx = px - R, dy = ry / ASPECT;
+      const r = Math.sqrt(dx * dx + dy * dy);
+      if (r > R + 0.5) { cells.push(GAP); continue; }
+      if (r > R - 0.6) { cells.push(RIM); continue; }
+      const w = paint && paint(dx, ry, r);
+      if (w) { cells.push(w); continue; }
+      cells.push(shadeCell(dx / R, dy / R, r / R));
+    }
+    rows.push(cells);
+  }
+  return rows;
+}
+
 function idleBall() {
-  return [
-    "          ________________",
-    "       .-'                '-.",
-    "     .'                      '.",
-    "    /          ______          \\",
-    "   |         .'      '.         |",
-    "   |        |    8     |        |",
-    "   |        |          |        |",
-    "   |         '.______.'         |",
-    "    \\                          /",
-    "     '.                      .'",
-    "       '-.________________.-'",
-  ].join("\n");
+  const rows = grid((dx, ry, r) => {
+    if (r > WR + 0.5) return null;
+    const gx = dx + 2, gy = ry + 3;
+    if (gy >= 0 && gy < 7 && gx >= 0 && gx < 5 && EIGHT[gy][gx] === "#") return GAP;
+    return RIM;
+  });
+  return rows.map((c) => c.join("")).join("\n");
 }
 
 function swirlBall(step) {
-  const s = ["~", "~ ~", "~ ~ ~", "~ ~"][step % 4];
-  const top = center(s, 10);
-  const bottom = center(s.split("").reverse().join(""), 10);
-  return [
-    "          ________________",
-    "       .-'                '-.",
-    "     .'                      '.",
-    "    /          ______          \\",
-    "   |         .'      '.         |",
-    `   |        |${top}|        |`,
-    `   |        |${bottom}|        |`,
-    "   |         '.______.'         |",
-    "    \\                          /",
-    "     '.                      .'",
-    "       '-.________________.-'",
-  ].join("\n");
+  const a0 = step * 0.7;
+  const bubbles = [0, 1, 2].map((i) => {
+    const a = a0 + (i * 2 * Math.PI) / 3;
+    const rr = 3 + (i % 2);
+    return [Math.round(Math.cos(a) * rr), Math.round(Math.sin(a) * rr)];
+  });
+  const rows = grid((dx, ry, r) => {
+    if (r > WR + 0.5) return null;
+    if (r > WR - 0.6) return RIM;
+    if (bubbles.some(([bx, by]) => bx === dx && by === ry)) return LIGHT;
+    return DARK;
+  });
+  return rows.map((c) => c.join("")).join("\n");
 }
 
-// Split the reply into up to three centered lines that fit in the triangle.
+// Split the reply into centered lines that fit the widening triangle rows.
 function wrapAnswer(text, widths) {
   const words = text.toUpperCase().split(" ");
   const lines = [];
@@ -76,23 +117,51 @@ function center(s, w) {
   return " ".repeat(left) + s + " ".repeat(pad - left);
 }
 
-// The triangle widens by two columns per row: interiors 0, 4, 8, 12, 16.
+// Triangle apex at row -4, base at row +4; row k has half-width k cells.
+const APEX = -4, ROWS = 9;
+const TEXT_ROWS = [4, 5, 6];
+const TEXT_WIDTHS = TEXT_ROWS.map((k) => (2 * k - 1) * 2 - 2); // 1-char margin each side
+
+// Returns {text, spans}: the frame as plain text plus [start, end] char ranges
+// of the answer lines, so the caller can wrap them in colored spans.
 function answerBall(text) {
-  const [a, b, c] = wrapAnswer(text, [8, 12, 16]);
-  const line = (s, w) => `<span class="answer">${escapeHtml(center(s, w))}</span>`;
-  return [
-    "          ________________",
-    "       .-'                '-.",
-    "     .'                      '.",
-    "    /            /\\            \\",
-    "   |           /    \\           |",
-    `   |         /${line(a, 8)}\\         |`,
-    `   |       /${line(b, 12)}\\       |`,
-    `   |     /${line(c, 16)}\\     |`,
-    "    \\   --------------------   /",
-    "     '.                      .'",
-    "       '-.________________.-'",
-  ].join("\n");
+  const lines = wrapAnswer(text, TEXT_WIDTHS);
+  const rows = grid((dx, ry, r) => {
+    if (r > WR + 0.5) return null;
+    if (r > WR - 0.6) return RIM;
+    const k = ry - APEX;
+    if (k < 0 || k >= ROWS) return DARK;
+    if (Math.abs(dx) > k) return DARK;
+    if (k === ROWS - 1 || Math.abs(dx) === k) return RIM;
+    return GAP;
+  });
+  const out = rows.map((c) => c.join(""));
+  const spans = [];
+  TEXT_ROWS.forEach((k, i) => {
+    const py = RY + APEX + k;
+    const width = TEXT_WIDTHS[i];
+    const startChar = (R - k + 1) * 2 + 1;
+    const row = out[py];
+    // Each cell is 2 chars but block glyphs are 1 code unit each, so char
+    // offsets and cell offsets agree.
+    const s = center(lines[i], width);
+    out[py] = row.slice(0, startChar) + s + row.slice(startChar + width);
+    if (lines[i]) spans.push([py, startChar, startChar + width]);
+  });
+  return { text: out.join("\n"), spans };
+}
+
+function answerBallHtml(text) {
+  const { text: frame, spans } = answerBall(text);
+  const lines = frame.split("\n");
+  for (const [row, start, end] of spans) {
+    const l = lines[row];
+    lines[row] =
+      escapeHtml(l.slice(0, start)) +
+      `<span class="answer">${escapeHtml(l.slice(start, end))}</span>` +
+      escapeHtml(l.slice(end));
+  }
+  return lines.join("\n");
 }
 
 function renderOdds(result) {
@@ -105,7 +174,8 @@ function renderOdds(result) {
   const rows = Object.entries(probs).sort((a, b) => b[1] - a[1]);
   const nameWidth = Math.max(...rows.map(([k]) => (labels[k] || k).length));
   const out = [
-    `<span class="head">jev probabilities (${escapeHtml(result.model || "jev")}), <- = sampled reply</span>`,
+    `<span class="head">jev probabilities (${escapeHtml(result.model || "jev")})</span>`,
+    "<- marks the sampled reply",
     "",
   ];
   for (const [key, p] of rows) {
@@ -156,11 +226,11 @@ async function ask(question) {
   }
 
   if (!result || !result.text) {
-    ballEl.innerHTML = answerBall("Reply hazy, try again.");
+    ballEl.innerHTML = answerBallHtml("Reply hazy, try again.");
     ballEl.classList.add("mood-maybe");
     statusEl.textContent = "error: could not reach the ball.";
   } else {
-    ballEl.innerHTML = answerBall(result.text);
+    ballEl.innerHTML = answerBallHtml(result.text);
     ballEl.classList.add(`mood-${result.mood}`);
     statusEl.textContent =
       result.source === "jev" ? `source: jev (${result.model})` :
