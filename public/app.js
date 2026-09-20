@@ -17,7 +17,7 @@ function escapeHtml(s) {
   return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 }
 
-// Every frame is 14 lines so the layout never jumps.
+// Every frame is 11 lines; .ball has a fixed height so the layout never jumps.
 function idleBall() {
   return [
     "          ________________",
@@ -31,9 +31,6 @@ function idleBall() {
     "    \\                          /",
     "     '.                      .'",
     "       '-.________________.-'",
-    "",
-    "",
-    "",
   ].join("\n");
 }
 
@@ -53,9 +50,6 @@ function swirlBall(step) {
     "    \\                          /",
     "     '.                      .'",
     "       '-.________________.-'",
-    "",
-    "",
-    "",
   ].join("\n");
 }
 
@@ -98,9 +92,6 @@ function answerBall(text) {
     "    \\   --------------------   /",
     "     '.                      .'",
     "       '-.________________.-'",
-    "",
-    "",
-    "",
   ].join("\n");
 }
 

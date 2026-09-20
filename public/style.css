@@ -48,8 +48,9 @@ pre {
 }
 
 .ball {
-  min-height: 15em;
-  margin-bottom: 20px;
+  height: calc(11 * 1.25em);
+  margin-bottom: 40px;
+  overflow: hidden;
 }
 
 .ball .answer { font-weight: 700; }
