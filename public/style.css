@@ -1,11 +1,29 @@
+/* Monochrome. Light by default, dark when the system prefers it or the
+   visitor toggles it (data-theme on <html>). */
 :root {
-  --bg: #0b0d14;
-  --text: #d6dbe8;
-  --muted: #6f7590;
-  --accent: #7c8cff;
-  --yes: #4ade80;
-  --no: #f87171;
-  --maybe: #fbbf24;
+  --bg: #ffffff;
+  --text: #000000;
+  --muted: #666666;
+  --rule: #bbbbbb;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #000000;
+    --text: #ffffff;
+    --muted: #999999;
+    --rule: #444444;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #000000;
+  --text: #ffffff;
+  --muted: #999999;
+  --rule: #444444;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -36,10 +54,10 @@ pre {
   overflow-x: auto;
 }
 
-.title { color: var(--accent); }
-
-@media (max-width: 480px) {
-  body { font-size: 11px; }
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .tagline {
@@ -55,24 +73,22 @@ pre {
   margin: 0 auto 32px;
   width: max-content;
   overflow: hidden;
-  color: #9aa3c4;
+  /* Fill the hairline seams between adjacent block glyphs. */
+  text-shadow: 0.6px 0 0 currentColor;
 }
 
 .ball .answer { font-weight: 700; }
-.ball.mood-yes .answer { color: var(--yes); }
-.ball.mood-no .answer { color: var(--no); }
-.ball.mood-maybe .answer { color: var(--maybe); }
 
 form {
   display: flex;
   align-items: center;
   gap: 8px;
-  border-top: 1px dashed #2a2f45;
-  border-bottom: 1px dashed #2a2f45;
+  border-top: 1px dashed var(--rule);
+  border-bottom: 1px dashed var(--rule);
   padding: 8px 0;
 }
 
-.prompt { color: var(--accent); }
+.prompt { font-weight: 700; }
 
 input {
   flex: 1;
@@ -83,7 +99,7 @@ input {
   color: var(--text);
   font: inherit;
   outline: none;
-  caret-color: var(--accent);
+  caret-color: var(--text);
 }
 
 input::placeholder { color: var(--muted); }
@@ -92,7 +108,7 @@ button {
   padding: 4px 0;
   border: none;
   background: transparent;
-  color: var(--accent);
+  color: var(--text);
   font: inherit;
   cursor: pointer;
 }
@@ -112,5 +128,9 @@ button:disabled { color: var(--muted); cursor: wait; text-decoration: none; }
 }
 
 .odds .picked { color: var(--text); font-weight: 700; }
-.odds .head { color: var(--accent); }
-.odds .bar { color: var(--accent); }
+.odds .head { color: var(--text); }
+.odds .bar { color: var(--text); }
+
+@media (max-width: 480px) {
+  body { font-size: 11px; }
+}

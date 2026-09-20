@@ -17,16 +17,16 @@ function escapeHtml(s) {
   return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 }
 
-// The ball is generated as a grid of 2-char "pixels" (block glyphs), shaded
-// like a sphere lit from the top left. Every frame is SIZE rows so the
-// layout never jumps. Vertical distances are in text rows, scaled by ASPECT.
+// The ball is a solid disc of 2-char block cells with the window cut out of
+// it. Every frame is ROWS_TOTAL rows so the layout never jumps. Vertical
+// distances are in text rows, scaled by ASPECT.
 const R = 14;          // ball radius in cells (1 cell = 2 chars wide)
 const WR = 9;          // window radius
 const ASPECT = 1.2;    // a 2-char cell is ~1.2x wider than a text row is tall
 const RY = Math.round(R * ASPECT);   // ball radius in text rows
 const SIZE = 2 * R + 1;
 const ROWS_TOTAL = 2 * RY + 1;
-const LIGHT = "░░", MID = "▒▒", DARK = "▓▓", RIM = "██", GAP = "  ";
+const INK = "██", GAP = "  ";
 
 const EIGHT = [
   ".###.",
@@ -37,15 +37,6 @@ const EIGHT = [
   "#...#",
   ".###.",
 ];
-
-function shadeCell(nx, ny, rn) {
-  // Lit from the top left; a reflection band bottom-right widens toward the rim.
-  const l = -(nx * 0.7 + ny * 0.7);         // +1 lit, -1 in shadow
-  const s = rn * rn * (0.5 - l);              // grows toward bottom-right rim
-  if (s > 0.75) return DARK;
-  if (s > 0.4) return MID;
-  return LIGHT;
-}
 
 // grid(paint): paint(dx, ry, r) may return a 2-char cell for the window area.
 // dx is in cells, ry in text rows, r the distance from center in cells.
@@ -58,10 +49,8 @@ function grid(paint) {
       const dx = px - R, dy = ry / ASPECT;
       const r = Math.sqrt(dx * dx + dy * dy);
       if (r > R + 0.5) { cells.push(GAP); continue; }
-      if (r > R - 0.6) { cells.push(RIM); continue; }
       const w = paint && paint(dx, ry, r);
-      if (w) { cells.push(w); continue; }
-      cells.push(shadeCell(dx / R, dy / R, r / R));
+      cells.push(w || INK);
     }
     rows.push(cells);
   }
@@ -72,8 +61,8 @@ function idleBall() {
   const rows = grid((dx, ry, r) => {
     if (r > WR + 0.5) return null;
     const gx = dx + 2, gy = ry + 3;
-    if (gy >= 0 && gy < 7 && gx >= 0 && gx < 5 && EIGHT[gy][gx] === "#") return GAP;
-    return RIM;
+    if (gy >= 0 && gy < 7 && gx >= 0 && gx < 5 && EIGHT[gy][gx] === "#") return INK;
+    return GAP;
   });
   return rows.map((c) => c.join("")).join("\n");
 }
@@ -87,9 +76,8 @@ function swirlBall(step) {
   });
   const rows = grid((dx, ry, r) => {
     if (r > WR + 0.5) return null;
-    if (r > WR - 0.6) return RIM;
-    if (bubbles.some(([bx, by]) => bx === dx && by === ry)) return LIGHT;
-    return DARK;
+    if (bubbles.some(([bx, by]) => bx === dx && by === ry)) return INK;
+    return GAP;
   });
   return rows.map((c) => c.join("")).join("\n");
 }
@@ -117,8 +105,8 @@ function center(s, w) {
   return " ".repeat(left) + s + " ".repeat(pad - left);
 }
 
-// Triangle apex at row -4, base at row +4; row k has half-width k cells.
-const APEX = -4, ROWS = 9;
+// Triangle apex at row -4, base at row +3; row k has half-width k cells.
+const APEX = -4, ROWS = 8;
 const TEXT_ROWS = [4, 5, 6];
 const TEXT_WIDTHS = TEXT_ROWS.map((k) => (2 * k - 1) * 2 - 2); // 1-char margin each side
 
@@ -128,11 +116,10 @@ function answerBall(text) {
   const lines = wrapAnswer(text, TEXT_WIDTHS);
   const rows = grid((dx, ry, r) => {
     if (r > WR + 0.5) return null;
-    if (r > WR - 0.6) return RIM;
     const k = ry - APEX;
-    if (k < 0 || k >= ROWS) return DARK;
-    if (Math.abs(dx) > k) return DARK;
-    if (k === ROWS - 1 || Math.abs(dx) === k) return RIM;
+    if (k < 0 || k >= ROWS) return GAP;
+    if (Math.abs(dx) > k) return GAP;
+    if (k === ROWS - 1 || Math.abs(dx) === k) return INK;
     return GAP;
   });
   const out = rows.map((c) => c.join(""));
@@ -244,6 +231,27 @@ async function ask(question) {
 }
 
 ballEl.textContent = idleBall();
+
+// Theme: follow the system unless the visitor picked one.
+const themeBtn = document.getElementById("theme");
+const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+
+function currentTheme() {
+  return document.documentElement.dataset.theme || (systemDark.matches ? "dark" : "light");
+}
+
+function renderThemeButton() {
+  themeBtn.textContent = currentTheme() === "dark" ? "[ light ]" : "[ dark ]";
+}
+
+themeBtn.addEventListener("click", () => {
+  const next = currentTheme() === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("theme", next); } catch {}
+  renderThemeButton();
+});
+systemDark.addEventListener("change", renderThemeButton);
+renderThemeButton();
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();
